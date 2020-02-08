@@ -21,70 +21,79 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 //routes
-// app.get('/', (req, res) => {
-//   const absolutePath = path.join(__dirname, 'index.html');
-//   res.sendFile(absolutePath);
-// });
+app.get('/', (req, res) => {
+  const absolutePath = path.join(__dirname, 'index.html');
+  res.sendFile(absolutePath);
+});
 
-// app.get('/tables', (req, res) => {
-//   const absolutePath = path.join(__dirname, 'tables.html');
-//   res.sendFile(absolutePath);
-// });
+app.get('/tables', (req, res) => {
+  const absolutePath = path.join(__dirname, 'tables.html');
+  res.sendFile(absolutePath);
+});
 
 app.get('/reserve', (req, res) => {
   const absolutePath = path.join(__dirname, 'reserve.html');
   res.sendFile(absolutePath);
 });
 
-// app.get('/api/tables', (req, res) => {
-//   let tables;
-//   fs.readFile('table.json', 'utf8', (err, data) => {
-//     if (err) throw err;
-//     tables = data;
-//     res.json(JSON.parse(tables));
-//   });
-// });
-
-// app.get('/api/waitlist', (req, res) => {
-//   let waitlist;
-//   fs.readFile('waitlist.json', 'utf8', (err, data) => {
-//     if (err) throw err;
-//     waitlist = data;
-//     res.json(JSON.parse(waitlist));
-//   });
-// });
-
-app.post('/api/tables', (req, res) => {
-  fs.readFile('reservations.json', 'utf8', (err, data) => {
-    console.log(data);
-    let json = JSON.parse('[' + data + ']');
-    json.push(req.body);
-    fs.writeFile('reservations.json', 'JSON.stringify(json)', err => {
-      console.log(err);
-    });
+app.get('/api/tables', (req, res) => {
+  let tables;
+  fs.readFile('table.json', 'utf8', (err, data) => {
+    if (err) throw err;
+    tables = data;
+    res.json(JSON.parse(tables));
   });
 });
 
-// app.post('/api/tables', (req, res) => {
-//   console.log('posted');
-//   const newReservation = req.body;
-//   let tables;
-//   fs.readFile('reservations.json', 'utf8', (err, data) => {
-//     if (err) throw err;
-//     tables = JSON.parse(data);
-//     console.log('--------old table------------');
-//     console.log(data);
-//     tables.push(newReservation);
+app.get('/api/waitlist', (req, res) => {
+  let waitlist;
+  fs.readFile('waitlist.json', 'utf8', (err, data) => {
+    if (err) throw err;
+    waitlist = data;
+    res.json(JSON.parse(waitlist));
+  });
+});
 
-//     console.log(newReservation);
-//     console.log('----------new table---------------------');
-//     console.log(tables);
-//     fs.writeFile('reservations.json', JSON.stringify(tables), 'utf8', err => {
-//       if (err) throw 'jsfgsdkf';
-//       console.log('-------write------------------------');
-//     });
-//   });
-// });
+app.post('/api/tables', (req, res) => {
+  const newReservation = req.body;
+  let tables;
+  fs.readFile('table.json', 'utf8', (err, data) => {
+    if (err) throw err;
+    tables = JSON.parse(data);
+    if (tables.length < 5) {
+      tables.push(newReservation);
+      if (tables.length > 1) {
+        for (let i = 0; i < tables.length; ++i) {
+          if (tables[i] === tables[i + 1]) {
+            tables.splice(tables.indexOf(i), 1);
+          }
+        }
+      }
+      fs.writeFile('table.json', JSON.stringify(tables), 'utf8', err => {
+        if (err) throw 'jsfgsdkf';
+      });
+      res.json(true);
+    } else {
+      let waiting;
+      fs.readFile('waitlist.json', 'utf8', (err, data) => {
+        if (err) throw err;
+        waiting = JSON.parse(data);
+        waiting.push(newReservation);
+        if (waiting.length > 1) {
+          for (let i = 0; i < waiting.length; ++i) {
+            if (waiting[i] === waiting[i + 1]) {
+              waiting.splice(waiting.indexOf(i), 1);
+            }
+          }
+        }
+        fs.writeFile('waitlist.json', JSON.stringify(waiting), 'utf8', err => {
+          if (err) throw 'error';
+        });
+      });
+      res.json(false);
+    }
+  });
+});
 
 //listener
 app.listen(PORT, () => console.log(`App listening on port ${PORT}`));
